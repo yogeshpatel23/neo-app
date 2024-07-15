@@ -15,7 +15,7 @@ const NavMenu = () => {
         <div className="space-x-4">
           {session ? (
             <>
-              <Link href="/">Dashboard</Link>
+              <Link href="/dashboard">Dashboard</Link>
               <Button
                 className="font-bold"
                 size="sm"

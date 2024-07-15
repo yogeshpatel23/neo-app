@@ -1,7 +1,7 @@
 "use client";
 import { IAccount } from "@/models/Account";
 import React, { useState } from "react";
-import { Button } from "../ui/button";
+import { Button, buttonVariants } from "../ui/button";
 import {
   Dialog,
   DialogFooter,
@@ -14,21 +14,22 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { getAccessToken } from "@/app/action";
+import { getAccessToken, verifyToken } from "@/app/action";
+import Link from "next/link";
 
 const AccountCard = ({ account }: { account: IAccount }) => {
   const [showOTPInput, setShowOTPInput] = useState(false);
   const [otp, setOtp] = useState("");
 
   async function handleLogin() {
-    // if (await getAccessToken(account)) {
-    //   setShowOTPInput(true);
-    // }
-    setShowOTPInput(true);
+    if (await getAccessToken(account)) {
+      setShowOTPInput(true);
+    }
   }
 
   async function verifyOTP() {
     console.log(otp);
+    await verifyToken(account._id, otp);
     setOtp("");
     setShowOTPInput(false);
   }
@@ -38,10 +39,16 @@ const AccountCard = ({ account }: { account: IAccount }) => {
       <div className="p-4 rounded-lg border-2 bg-gray-800">
         <pre>{JSON.stringify(account, null, 2)}</pre>
       </div>
-      <div>
+      <div className="flex gap-4">
         <Button onClick={handleLogin} variant="outline">
           Login
         </Button>
+        <Link
+          href="/terminal"
+          className={buttonVariants({ variant: "outline" })}
+        >
+          Terminal
+        </Link>
       </div>
       <Dialog open={showOTPInput} onOpenChange={setShowOTPInput}>
         <DialogContent className="w-48">

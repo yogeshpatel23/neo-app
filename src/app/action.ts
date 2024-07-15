@@ -118,6 +118,12 @@ export async function getAccount() {
 
 export async function getAccessToken(account: IAccount) {
   try {
+    await dbConnect();
+    const dbaccount: HydratedDocument<IAccount> | null = await Account.findById(
+      account._id
+    );
+    console.log(dbaccount);
+    if (!dbaccount) return false;
     let base64 = btoa(`${account.appKey}:${account.appSecret}`);
     const urlencoded = new URLSearchParams();
     urlencoded.append("grant_type", "password");
@@ -179,32 +185,52 @@ export async function getAccessToken(account: IAccount) {
     const otpResData = await genOTPRes.json();
     console.log(genOTPRes.status);
     console.log(otpResData);
+    dbaccount.sid = sid;
+    dbaccount.accessToken = accessToken;
+    dbaccount.token = token;
+    dbaccount.userId = userId;
+    dbaccount.save();
+
     return true;
   } catch (error) {
     console.log("error");
+    console.log(typeof error);
     console.log(error);
   }
   return false;
 }
 
-export async function veifyToken(account: IAccount, otp: string) {
+export async function verifyToken(id: string, otp: string) {
   try {
+    await dbConnect();
+    const account: HydratedDocument<IAccount> | null = await Account.findById(
+      id
+    );
+    if (!account) throw Error("No Account");
+    if (!account.accessToken || !account.token || !account.sid)
+      throw Error("some field are missing");
     const res = await fetch(
       "https://gw-napi.kotaksecurities.com/login/1.0/login/v2/validate",
       {
         method: "POST",
-        // headers: {
-        //   Authorization: `Bearer ${account.accessToken}`,
-        //   Auth: account.token,
-        //   'sid': account.sid,
-        //   "Content-Type": "application/json",
-        // },
+        headers: {
+          Authorization: `Bearer ${account.accessToken}`,
+          Auth: account.token,
+          sid: account.sid,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           userId: account.userId,
           otp: otp,
         }),
       }
     );
+    const resData = await res.json();
+    console.log(res.status);
+    console.log(resData);
+    const token = resData.data.token;
+    account.token = token;
+    await account.save();
   } catch (error) {
     console.log(error);
   }
