@@ -230,6 +230,7 @@ export async function verifyToken(id: string, otp: string) {
     console.log(resData);
     const token = resData.data.token;
     account.token = token;
+    account.hsServerId = resData.data.hsServerId;
     await account.save();
   } catch (error) {
     console.log(error);

@@ -13,7 +13,8 @@ export class KotakNeo {
   constructor(
     public accessToken: string,
     public token: string,
-    public sid: string
+    public sid: string,
+    public serverid: string
   ) {}
 
   async searchScript(text: string): Promise<Script[]> {
@@ -37,7 +38,91 @@ export class KotakNeo {
     return [];
   }
 
-  async placeOreder() {
-    console.log("order placed");
+  async placeOreder(data: {}) {
+    const url = `https://gw-napi.kotaksecurities.com/Orders/2.0/quick/order/rule/ms/place?sId=${this.serverid}`;
+    const headers = {
+      accept: "application/json",
+      Authorization: `Bearer ${this.accessToken}`,
+      Auth: this.token,
+      sid: this.sid,
+      "neo-fin-key": "neotradeapi",
+      "Content-Type": "application/x-www-form-urlencoded",
+    };
+    const payload = `jData=${encodeURI(JSON.stringify(data))}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: headers,
+      body: payload,
+    });
+
+    const resData = await res.json();
+    return resData;
+  }
+
+  async cancleOreder(on: string) {
+    const url = `https://gw-napi.kotaksecurities.com/Orders/2.0/quick/order/cancel?sId=${this.serverid}`;
+    const headers = {
+      accept: "application/json",
+      Authorization: `Bearer ${this.accessToken}`,
+      Auth: this.token,
+      sid: this.sid,
+      "neo-fin-key": "neotradeapi",
+      "Content-Type": "application/x-www-form-urlencoded",
+    };
+    const payload = `jData=${encodeURI(JSON.stringify({ on, amo: "NO" }))}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: headers,
+      body: payload,
+    });
+
+    const resData = await res.json();
+    return resData;
+  }
+
+  async getOrderBook() {
+    let url = `https://gw-napi.kotaksecurities.com/Orders/2.0/quick/user/orders?sid=${this.serverid}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+        Authorization: `Bearer ${this.accessToken}`,
+        Auth: this.token,
+        sid: this.sid,
+        "neo-fin-key": "neotradeapi",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
+
+    const resData = await res.json();
+    return resData;
+    if (res.status === 200) {
+    } else {
+      console.log(resData);
+    }
+    return [];
+  }
+
+  async getPosition() {
+    let url = `https://gw-napi.kotaksecurities.com/Orders/2.0/quick/user/positions?sid=${this.serverid}`;
+    const res = await fetch(url, {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+        Authorization: `Bearer ${this.accessToken}`,
+        Auth: this.token,
+        sid: this.sid,
+        "neo-fin-key": "neotradeapi",
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
+
+    const resData = await res.json();
+    return resData;
+    if (res.status === 200) {
+    } else {
+      console.log(resData);
+    }
+    return [];
   }
 }

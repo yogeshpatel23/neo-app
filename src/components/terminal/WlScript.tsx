@@ -15,17 +15,75 @@ import { useToast } from "../ui/use-toast";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { KotakNeo } from "@/lib/KotakNeo";
+import { OrderShema, OrderType } from "@/validation/order";
 
 const WlScript = ({ script, neo }: { script: Script; neo: KotakNeo }) => {
-  const [prctyp, setPrctyp] = useState("LMT");
+  const [prctyp, setPrctyp] = useState("L");
 
   const qtyRef = useRef<HTMLInputElement>(null);
   const prcRef = useRef<HTMLInputElement>(null);
 
   const { toast } = useToast();
 
-  function handleOrder() {
-    neo.placeOreder();
+  async function handleOrder() {
+    const data: any = {
+      es: script.exseg,
+      pc: "MIS",
+      pt: prctyp,
+      tt: "B",
+      ts: script.trdSymbol,
+      pr: (
+        parseFloat(script.ltp ?? "0") +
+        Math.round((parseFloat(script.ltp ?? "0") * 0.01) / 0.05) * 0.05
+      ).toString(),
+      qt: qtyRef.current?.value,
+    };
+
+    if (prctyp === "L") {
+      if (!prcRef.current) return;
+      data.pr = prcRef.current.value;
+    }
+
+    if (prctyp === "SL") {
+      if (!prcRef.current) return;
+      if (parseFloat(prcRef.current.value) < parseFloat(script.ltp!)) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Triger price greate then LTP",
+        });
+      }
+      data.tp = prcRef.current.value;
+      data.pr = (
+        parseFloat(prcRef.current.value) +
+        Math.round((parseFloat(prcRef.current.value) * 0.01) / 0.05) * 0.05
+      ).toString();
+    }
+    const validData = OrderShema.safeParse(data);
+    if (!validData.success) {
+      console.log(validData.error.flatten());
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Some field are missing",
+      });
+      return;
+    }
+    console.log(validData.data);
+    const res = await neo.placeOreder({ ...validData.data });
+    if (res.stat === "Ok") {
+      toast({
+        title: "Order placed",
+        description: `Order no: ${res.nOrdNo}`,
+      });
+    } else {
+      console.log(res);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: res.errMsg,
+      });
+    }
   }
 
   return (
@@ -59,9 +117,9 @@ const WlScript = ({ script, neo }: { script: Script; neo: KotakNeo }) => {
               <SelectValue placeholder="Select Index" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="LMT">LIMIT</SelectItem>
+              <SelectItem value="L">LIMIT</SelectItem>
               <SelectItem value="MKT">MKT</SelectItem>
-              <SelectItem value="SL-LMT">SLM</SelectItem>
+              <SelectItem value="SL">SLM</SelectItem>
               {/* <SelectItem value="SL-LMT">SL-LMT</SelectItem> */}
             </SelectContent>
           </Select>

@@ -14,6 +14,7 @@ export interface IAccount {
   token?: string;
   sid?: string;
   tokenExp?: string;
+  hsServerId?: string;
 }
 
 const accountSchema = new Schema<IAccount>({

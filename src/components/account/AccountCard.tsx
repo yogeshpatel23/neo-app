@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogContent,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   InputOTP,
@@ -55,6 +56,7 @@ const AccountCard = ({ account }: { account: IAccount }) => {
           <DialogHeader>
             <DialogTitle>Enter OTP</DialogTitle>
           </DialogHeader>
+          <DialogDescription></DialogDescription>
           <div className="flex justify-center">
             <InputOTP maxLength={4} value={otp} onChange={(val) => setOtp(val)}>
               <InputOTPGroup>
