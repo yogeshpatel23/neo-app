@@ -1,15 +1,16 @@
 "use client";
 import { IAccount } from "@/models/Account";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import Watchlist from "./Watchlist";
 import { KotakNeo } from "@/lib/KotakNeo";
 import { useToast } from "../ui/use-toast";
 import { useDispatch, useSelector } from "react-redux";
-import { initOrderlist } from "@/store/orderlistSlice";
-import { initPositions } from "@/store/positionsSlice";
+import { initOrderlist, updateOrderltp } from "@/store/orderlistSlice";
+import { initPositions, updatePositonltp } from "@/store/positionsSlice";
 import { RootState } from "@/store";
 import Orders from "./Orders";
 import { OrderBook } from "@/types/orderbook";
+import { updateScript } from "@/store/watchlistSlice";
 
 const Terminal = ({ account }: { account: IAccount }) => {
   const neo = new KotakNeo(
@@ -23,6 +24,19 @@ const Terminal = ({ account }: { account: IAccount }) => {
 
   const orders = useSelector((store: RootState) => store.orderlist);
   const positons = useSelector((store: RootState) => store.positions);
+  const {
+    ceScript,
+    peScript,
+    ceScript2,
+    peScript2,
+    ceScript3,
+    peScript3,
+    ceScript4,
+    peScript4,
+    eqScript,
+  } = useSelector((store: RootState) => store.watchlist);
+
+  const ws = useRef<any>();
 
   async function getOrders() {
     let res = await neo.getOrderBook();
@@ -53,16 +67,90 @@ const Terminal = ({ account }: { account: IAccount }) => {
     dispatch(initPositions(res.data));
   }
 
-  useEffect(() => {
-    getOrders();
-    getPosition();
+  function wsOpen() {
+    console.log("wsoptn");
+    ws.current.send(
+      JSON.stringify({
+        Authorization: account.token!,
+        Sid: account.sid!,
+        type: "cn",
+      })
+    );
+  }
 
-    return () => {};
+  function wsMsg(msg: any) {
+    let data = JSON.parse(msg);
+    console.log(data);
+    if (data[0].stat === "Ok" && data[0].type === "cn") {
+      let tokens: string[] = [];
+      if (ceScript) tokens.push(`${ceScript.exseg}|${ceScript.exchangeId}`);
+      if (peScript) tokens.push(`${peScript.exseg}|${peScript.exchangeId}`);
+      if (ceScript2) tokens.push(`${ceScript2.exseg}|${ceScript2.exchangeId}`);
+      if (peScript2) tokens.push(`${peScript2.exseg}|${peScript2.exchangeId}`);
+      if (ceScript3) tokens.push(`${ceScript3.exseg}|${ceScript3.exchangeId}`);
+      if (peScript3) tokens.push(`${peScript3.exseg}|${peScript3.exchangeId}`);
+      if (ceScript4) tokens.push(`${ceScript4.exseg}|${ceScript4.exchangeId}`);
+      if (peScript4) tokens.push(`${peScript4.exseg}|${peScript4.exchangeId}`);
+      if (eqScript) tokens.push(`${eqScript.exseg}|${eqScript.exchangeId}`);
+      ws.current.send(
+        JSON.stringify({
+          type: "mws",
+          scrips: tokens.join("&"),
+          channelnum: "1",
+        })
+      );
+    } else {
+      data.forEach((element: any) => {
+        if (element.ltp) {
+          dispatch(updateScript({ exchangeId: element.tk, lp: element.ltp }));
+          dispatch(updateOrderltp({ token: element.tk, lp: element.ltp }));
+          dispatch(updatePositonltp({ token: element.tk, lp: element.lp }));
+        }
+      });
+    }
+  }
+
+  function wsfun(exch: string, tk: string) {
+    console.log(exch, tk);
+    ws.current.send(
+      JSON.stringify({
+        type: "mws",
+        scrips: `${exch}|${tk}`,
+        channelnum: "1",
+      })
+    );
+  }
+
+  function connectWs() {
+    let url = "wss://mlhsm.kotaksecurities.com";
+    // const userWS = new HSWebSocket(url);
+    // @ts-ignore
+    ws.current = new HSWebSocket(url);
+    ws.current.onclose = () => {
+      console.log("ws close");
+    };
+    ws.current.onerror = () => {
+      console.log("ws error");
+    };
+
+    ws.current.onmessage = wsMsg;
+
+    ws.current.onopen = wsOpen;
+  }
+
+  useEffect(() => {
+    // getOrders();
+    // getPosition();
+
+    connectWs();
+    return () => {
+      ws.current?.close();
+    };
   }, []);
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
-      <Watchlist neo={neo} />
+      <Watchlist neo={neo} wsfun={wsfun} />
       <div className="border grow pt-2 md:pt-4 flex flex-col">
         <div className="h-24 overflow-y-scroll">
           <h2 className="text-sm text-green-600 px-2">Orders</h2>

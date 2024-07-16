@@ -17,7 +17,7 @@ import { addToWatchlist } from "@/store/watchlistSlice";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import WlScript from "./WlScript";
 
-const Watchlist = ({ neo }: { neo: KotakNeo }) => {
+const Watchlist = ({ neo, wsfun }: { neo: KotakNeo; wsfun: Function }) => {
   const [tabId, setTabId] = useState("1");
   const [index, setIndex] = useState("NIFTY");
   const [exch, setExch] = useState("NFO");
@@ -77,12 +77,14 @@ const Watchlist = ({ neo }: { neo: KotakNeo }) => {
 
   function handleSelect(script: Script) {
     // if (ws.readyState === 1) {
-    //   ws.send(
-    //     JSON.stringify({
-    //       t: "t",
-    //       k: `${script.exch}|${script.token}`,
-    //     })
-    //   );
+    wsfun(script.exseg, script.exchangeId);
+    // ws.send(
+    //   JSON.stringify({
+    //     type: "mws",
+    //     scrips: `${script.exseg}|${script.exchangeId}`,
+    //     channelnum: "1",
+    //   })
+    // );
     // }
     dispatch(addToWatchlist({ script, tabId }));
     setSearchResult([]);
