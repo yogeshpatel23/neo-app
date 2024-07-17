@@ -8,6 +8,7 @@ import { AccountSchema } from "@/validation/account";
 import { registerSchema } from "@/validation/register";
 import { HydratedDocument, MongooseError, Types } from "mongoose";
 import { getServerSession, Session } from "next-auth";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export async function registerUserAction(prevState: any, formData: FormData) {
@@ -114,6 +115,81 @@ export async function getAccount() {
   } catch (error) {
     console.log(error);
   }
+}
+
+export async function getAccountById(id: string) {
+  const session: any = await getServerSession(authOptions);
+  const user: string = session?.user.id;
+  await dbConnect();
+  try {
+    const accounts: HydratedDocument<IAccount>[] = await Account.aggregate([
+      {
+        $match: {
+          user: new Types.ObjectId(user),
+          _id: new Types.ObjectId(id),
+          // _id: id,
+        },
+      },
+      {
+        $project: {
+          _id: {
+            $toString: "$_id",
+          },
+          user: {
+            $toString: "$user",
+          },
+          appKey: 1,
+          appSecret: 1,
+          appId: 1,
+          appPass: 1,
+          mobile: 1,
+          password: 1,
+          userId: 1,
+          accessToken: 1,
+          token: 1,
+          sid: 1,
+          tokenExp: 1,
+        },
+      },
+    ]);
+    if (accounts.length == 0) return null;
+    return accounts[0];
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+export async function editAccount(formState: any, formdata: FormData) {
+  // Todo:: Add error handel
+  const rawData = Object.fromEntries(formdata.entries());
+  const validatedFields = AccountSchema.safeParse(rawData);
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+  await dbConnect();
+  let account = await Account.findByIdAndUpdate(
+    { _id: rawData.id },
+    validatedFields.data
+  );
+  redirect("/dashboard");
+}
+
+export async function deleteAccount(formState: any, formdata: FormData) {
+  const id = formdata.get("id");
+  if (typeof id != "string")
+    return {
+      message: "Something went wrong",
+    };
+  await dbConnect();
+  const result = await Account.findByIdAndDelete(new Types.ObjectId(id));
+  if (!result) {
+    return {
+      message: "Something went wrong",
+    };
+  }
+  revalidatePath("/dashboard");
 }
 
 export async function getAccessToken(account: IAccount) {
