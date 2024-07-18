@@ -311,4 +311,5 @@ export async function verifyToken(id: string, otp: string) {
   } catch (error) {
     console.log(error);
   }
+  revalidatePath("/dashboard");
 }

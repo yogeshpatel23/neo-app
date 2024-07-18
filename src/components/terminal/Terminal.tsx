@@ -11,6 +11,8 @@ import { RootState } from "@/store";
 import Orders from "./Orders";
 import { OrderBook } from "@/types/orderbook";
 import { updateScript } from "@/store/watchlistSlice";
+import Position from "./Position";
+import { PositionBook } from "@/types/positionbook";
 
 const Terminal = ({ account }: { account: IAccount }) => {
   const neo = new KotakNeo(
@@ -36,9 +38,12 @@ const Terminal = ({ account }: { account: IAccount }) => {
     eqScript,
   } = useSelector((store: RootState) => store.watchlist);
 
-  const ws = useRef<any>();
+  let invt: NodeJS.Timeout;
 
-  async function getOrders() {
+  const ws = useRef<any>();
+  const orws = useRef<any>();
+
+  async function getOrders(): Promise<OrderBook[]> {
     let res = await neo.getOrderBook();
     if (res.stat !== "Ok") {
       toast({
@@ -46,15 +51,19 @@ const Terminal = ({ account }: { account: IAccount }) => {
         title: `Error : ${res.message}`,
         description: res.description,
       });
-      return;
+      return [];
     }
     let orders: OrderBook[] = res.data;
-    console.log(orders);
-    const openOrders = orders.filter((o) => o.ordSt === "open");
+    const openOrders = orders.filter(
+      (o) => o.ordSt === "open" || o.ordSt === "trigger pending"
+    );
+    // dispatch(initOrderlist(res.data));
+    // return res.data;
     dispatch(initOrderlist(openOrders));
+    return openOrders;
   }
 
-  async function getPosition() {
+  async function getPosition(): Promise<PositionBook[]> {
     let res = await neo.getPosition();
     if (res.stat !== "Ok") {
       toast({
@@ -62,13 +71,15 @@ const Terminal = ({ account }: { account: IAccount }) => {
         title: `Error : ${res.message}`,
         description: res.description,
       });
-      return;
+      return [];
     }
+    console.log(res.data);
     dispatch(initPositions(res.data));
+    return res.data;
   }
 
   function wsOpen() {
-    console.log("wsoptn");
+    console.info("wsoptn");
     ws.current.send(
       JSON.stringify({
         Authorization: account.token!,
@@ -80,9 +91,10 @@ const Terminal = ({ account }: { account: IAccount }) => {
 
   function wsMsg(msg: any) {
     let data = JSON.parse(msg);
-    console.log(data);
+
     if (data[0].stat === "Ok" && data[0].type === "cn") {
       let tokens: string[] = [];
+
       if (ceScript) tokens.push(`${ceScript.exseg}|${ceScript.exchangeId}`);
       if (peScript) tokens.push(`${peScript.exseg}|${peScript.exchangeId}`);
       if (ceScript2) tokens.push(`${ceScript2.exseg}|${ceScript2.exchangeId}`);
@@ -92,19 +104,38 @@ const Terminal = ({ account }: { account: IAccount }) => {
       if (ceScript4) tokens.push(`${ceScript4.exseg}|${ceScript4.exchangeId}`);
       if (peScript4) tokens.push(`${peScript4.exseg}|${peScript4.exchangeId}`);
       if (eqScript) tokens.push(`${eqScript.exseg}|${eqScript.exchangeId}`);
-      ws.current.send(
-        JSON.stringify({
-          type: "mws",
-          scrips: tokens.join("&"),
-          channelnum: "1",
-        })
-      );
+
+      Promise.allSettled([getOrders(), getPosition()]).then((responses) => {
+        if (responses[0].status === "fulfilled") {
+          if (responses[0].value) {
+            responses[0].value.forEach((o) => {
+              tokens.push(`${o.exSeg}|${o.tok}`);
+            });
+          }
+        }
+
+        if (responses[1].status === "fulfilled") {
+          if (responses[1].value) {
+            responses[1].value.forEach((p) => {
+              tokens.push(`${p.exSeg}|${p.tok}`);
+            });
+          }
+        }
+
+        ws.current.send(
+          JSON.stringify({
+            type: "mws",
+            scrips: tokens.join("&"),
+            channelnum: "1",
+          })
+        );
+      });
     } else {
       data.forEach((element: any) => {
         if (element.ltp) {
           dispatch(updateScript({ exchangeId: element.tk, lp: element.ltp }));
           dispatch(updateOrderltp({ token: element.tk, lp: element.ltp }));
-          dispatch(updatePositonltp({ token: element.tk, lp: element.lp }));
+          dispatch(updatePositonltp({ token: element.tk, lp: element.ltp }));
         }
       });
     }
@@ -121,21 +152,83 @@ const Terminal = ({ account }: { account: IAccount }) => {
     );
   }
 
+  function orwsMsg(msg: any) {
+    let data = JSON.parse(msg);
+    switch (data.type) {
+      case "cn":
+        if (data.ak !== "ok") {
+          toast({
+            title: "WS Error",
+            description: data.msg,
+          });
+        }
+        break;
+      case "order":
+        switch (data.data.ordSt) {
+          case "open":
+            console.error("order placed fetch order");
+            break;
+          case "cancelled":
+            console.error("order placed remove order");
+            break;
+          case '"put order req received':
+          case "validation pending":
+          case "open pending":
+          case "cancel pending":
+            console.error(data.data.ordSt);
+            break;
+
+          default:
+            console.log(data.data);
+            break;
+        }
+        break;
+      default:
+        console.error(data);
+        break;
+    }
+  }
+
   function connectWs() {
     let url = "wss://mlhsm.kotaksecurities.com";
     // const userWS = new HSWebSocket(url);
     // @ts-ignore
     ws.current = new HSWebSocket(url);
     ws.current.onclose = () => {
-      console.log("ws close");
+      console.info("ws close");
     };
     ws.current.onerror = () => {
-      console.log("ws error");
+      console.info("ws error");
     };
 
     ws.current.onmessage = wsMsg;
 
     ws.current.onopen = wsOpen;
+
+    // Order websocket
+    // @ts-ignore
+    orws.current = new HSIWebSocket(
+      `wss://clhsi.kotaksecurities.com/realtime?sId=server2`
+    );
+
+    orws.current.onclose = () => {
+      console.info("order ws close");
+    };
+    orws.current.onerror = () => {
+      console.info("order ws error");
+    };
+    orws.current.onopen = () => {
+      orws.current.send(
+        JSON.stringify({
+          type: "cn",
+          Authorization: account.token!,
+          Sid: account.sid!,
+          source: "API",
+        })
+      );
+    };
+
+    orws.current.onmessage = orwsMsg;
   }
 
   useEffect(() => {
@@ -143,8 +236,18 @@ const Terminal = ({ account }: { account: IAccount }) => {
     // getPosition();
 
     connectWs();
+    // invt = setInterval(() => {
+    //   console.error(orws.current);
+    //   orws.current.send(
+    //     JSON.stringify({
+    //       type: "hb",
+    //     })
+    //   );
+    // }, 10000);
     return () => {
       ws.current?.close();
+      orws.current?.close();
+      // if (invt) clearInterval(invt);
     };
   }, []);
 
@@ -164,6 +267,13 @@ const Terminal = ({ account }: { account: IAccount }) => {
         </div>
         <div className="h-24">
           <h2 className="text-sm text-green-600 px-2">Positons</h2>
+          {positons.length === 0 ? (
+            <p className="px-2">No Positions</p>
+          ) : (
+            positons.map((pos) => (
+              <Position key={pos.trdSym} neo={neo} position={pos} />
+            ))
+          )}
         </div>
       </div>
     </div>

@@ -12,6 +12,7 @@ export default async function DashboardPage() {
     redirect("/login");
   }
   const account = await getAccount();
+  console.log(account);
   if (!account) redirect("/account/add");
   return (
     <main className="flex flex-col justify-center p-2 md:p-4">

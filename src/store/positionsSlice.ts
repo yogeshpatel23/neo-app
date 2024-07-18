@@ -8,7 +8,10 @@ const positionsSlice = createSlice({
   initialState,
   reducers: {
     initPositions: (state, action) => action.payload,
-    updatePositonltp: (state, action) => {
+    updatePositonltp: (
+      state,
+      action: PayloadAction<{ token: string; lp: string }>
+    ) => {
       let p = state.find((pos) => pos.tok === action.payload.token);
       if (p) {
         p.lp = action.payload.lp;

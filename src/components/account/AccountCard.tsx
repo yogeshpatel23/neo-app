@@ -55,7 +55,7 @@ const AccountCard = ({ account }: { account: IAccount }) => {
           <p>Mobile : {account.mobile}</p>
           <div className="flex justify-center items-center pt-4">
             <Link
-              href={isValid ? `/terminal/${account._id}` : "#"}
+              href={isValid ? `/terminal` : "#"}
               className={`${buttonVariants({
                 size: "sm",
                 variant: "outline",

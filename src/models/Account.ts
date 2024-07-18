@@ -53,6 +53,7 @@ const accountSchema = new Schema<IAccount>({
   token: String,
   sid: String,
   tokenExp: String,
+  hsServerId: String,
 });
 
 accountSchema.pre("save", function (next) {
