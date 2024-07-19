@@ -13,6 +13,8 @@ import {
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { KotakNeo } from "@/lib/KotakNeo";
+import { useToast } from "../ui/use-toast";
+import { MOrderSchema } from "@/validation/order";
 
 const Orders = ({ order, neo }: { order: OrderBook; neo: KotakNeo }) => {
   const [editMode, setEditMode] = useState(false);
@@ -21,9 +23,78 @@ const Orders = ({ order, neo }: { order: OrderBook; neo: KotakNeo }) => {
   const qtyRef = useRef<HTMLInputElement>(null);
   const prcRef = useRef<HTMLInputElement>(null);
 
+  const { toast } = useToast();
+
   async function handleCancle() {
     let res = await neo.cancleOreder(order.nOrdNo);
-    console.log(res);
+    if (res.stat === "Ok") {
+      toast({
+        title: "Order cancled",
+        description: `Order no ${res.result} is canceled`,
+      });
+    }
+  }
+
+  async function handleModify() {
+    if (!order.ltp) return;
+    let data: any = {
+      es: order.exSeg,
+      no: order.nOrdNo,
+      ts: order.trdSym,
+      tt: order.trnsTp,
+      qt: qtyRef.current?.value,
+      tk: order.tok,
+      pt: prctyp,
+      pc: order.prod,
+    };
+
+    if (prctyp === "MKT") {
+      data["pr"] = (
+        parseFloat(order.ltp ?? "0") +
+        Math.round((parseFloat(order.ltp ?? "0") * 0.01) / 0.05) * 0.05
+      ).toString();
+    }
+
+    if (prctyp === "L") {
+      if (!prcRef.current) return;
+      data.pr = prcRef.current.value;
+    }
+
+    if (prctyp === "SL") {
+      if (!prcRef.current) return;
+      if (parseFloat(prcRef.current.value) < parseFloat(order.ltp!)) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Triger price greate then LTP",
+        });
+        return;
+      }
+      data.tp = prcRef.current.value;
+      data.pr = (
+        parseFloat(prcRef.current.value) +
+        Math.round((parseFloat(prcRef.current.value) * 0.01) / 0.05) * 0.05
+      ).toString();
+    }
+
+    const validData = MOrderSchema.safeParse(data);
+    if (!validData.success) {
+      console.error(validData.error.flatten());
+    }
+    let mo_res = await neo.modifyOreder({ ...validData.data });
+    if (mo_res.stat !== "Ok") {
+      toast({
+        variant: "destructive",
+        title: "Modification Error",
+        description: mo_res.errMsg,
+      });
+      return;
+    }
+    toast({
+      title: "Order Modifyed",
+      description: `Order no. ${mo_res.nOrdNo} is modifyed`,
+    });
+    setEditMode(false);
   }
 
   return editMode ? (
@@ -71,7 +142,7 @@ const Orders = ({ order, neo }: { order: OrderBook; neo: KotakNeo }) => {
       </div>
       <div className="flex flex-col md:flex-row gap-1">
         <Button
-          //   onClick={handleModify}
+          onClick={handleModify}
           size="sm"
           variant="outline"
           className="h-6 p-2"

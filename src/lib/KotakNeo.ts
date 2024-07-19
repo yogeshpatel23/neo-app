@@ -59,8 +59,30 @@ export class KotakNeo {
     return resData;
   }
 
+  async modifyOreder(data: {}) {
+    const url = `https://gw-napi.kotaksecurities.com/Orders/2.0/quick/order/vr/modify?sId=${this.serverid}`;
+    const headers = {
+      accept: "application/json",
+      Authorization: `Bearer ${this.accessToken}`,
+      Auth: this.token,
+      sid: this.sid,
+      "neo-fin-key": "neotradeapi",
+      "Content-Type": "application/x-www-form-urlencoded",
+    };
+    let urlencoded = new URLSearchParams();
+    urlencoded.append("jData", JSON.stringify(data));
+    const res = await fetch(url, {
+      method: "POST",
+      headers: headers,
+      body: urlencoded,
+    });
+
+    const resData = await res.json();
+    return resData;
+  }
+
   async cancleOreder(on: string) {
-    const url = `https://gw-napi.kotaksecurities.com/Orders/2.0/quick/order/cancel?sId=${this.serverid}`;
+    const url = `https://gw-napi.kotaksecurities.com/Orders/2.0/quick/order/cancel?sid=${this.serverid}`;
     const headers = {
       accept: "application/json",
       Authorization: `Bearer ${this.accessToken}`,

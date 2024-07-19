@@ -76,16 +76,8 @@ const Watchlist = ({ neo, wsfun }: { neo: KotakNeo; wsfun: Function }) => {
   }, [stext]);
 
   function handleSelect(script: Script) {
-    // if (ws.readyState === 1) {
     wsfun(script.exseg, script.exchangeId);
-    // ws.send(
-    //   JSON.stringify({
-    //     type: "mws",
-    //     scrips: `${script.exseg}|${script.exchangeId}`,
-    //     channelnum: "1",
-    //   })
-    // );
-    // }
+
     dispatch(addToWatchlist({ script, tabId }));
     setSearchResult([]);
     setStext("");

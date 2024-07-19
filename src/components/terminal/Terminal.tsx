@@ -13,6 +13,7 @@ import { OrderBook } from "@/types/orderbook";
 import { updateScript } from "@/store/watchlistSlice";
 import Position from "./Position";
 import { PositionBook } from "@/types/positionbook";
+import { error } from "console";
 
 const Terminal = ({ account }: { account: IAccount }) => {
   const neo = new KotakNeo(
@@ -47,9 +48,9 @@ const Terminal = ({ account }: { account: IAccount }) => {
     let res = await neo.getOrderBook();
     if (res.stat !== "Ok") {
       toast({
-        variant: "destructive",
-        title: `Error : ${res.message}`,
-        description: res.description,
+        variant: res.errMsg === "No Data" ? "default" : "destructive",
+        title: res.errMsg === "No Data" ? "Order Info" : "Error",
+        description: res.errMsg,
       });
       return [];
     }
@@ -57,8 +58,7 @@ const Terminal = ({ account }: { account: IAccount }) => {
     const openOrders = orders.filter(
       (o) => o.ordSt === "open" || o.ordSt === "trigger pending"
     );
-    // dispatch(initOrderlist(res.data));
-    // return res.data;
+
     dispatch(initOrderlist(openOrders));
     return openOrders;
   }
@@ -67,13 +67,13 @@ const Terminal = ({ account }: { account: IAccount }) => {
     let res = await neo.getPosition();
     if (res.stat !== "Ok") {
       toast({
-        variant: "destructive",
-        title: `Error : ${res.message}`,
-        description: res.description,
+        variant: res.errMsg === "No Data" ? "default" : "destructive",
+        title: res.errMsg === "No Data" ? "Position Info" : "Error",
+        description: res.errMsg,
       });
       return [];
     }
-    console.log(res.data);
+
     dispatch(initPositions(res.data));
     return res.data;
   }
@@ -164,22 +164,29 @@ const Terminal = ({ account }: { account: IAccount }) => {
         }
         break;
       case "order":
+        console.warn(data.data);
         switch (data.data.ordSt) {
           case "open":
+          case "trigger pending":
+            getOrders();
             console.error("order placed fetch order");
             break;
           case "cancelled":
+            console.warn(data.data.ordSt);
             console.error("order placed remove order");
             break;
-          case '"put order req received':
+          case "put order req received":
           case "validation pending":
           case "open pending":
+          case "modify validation pending":
+          case "modify pending":
+          case "modified":
           case "cancel pending":
             console.error(data.data.ordSt);
             break;
 
           default:
-            console.log(data.data);
+            console.error(data.data);
             break;
         }
         break;

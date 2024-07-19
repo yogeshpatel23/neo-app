@@ -61,7 +61,7 @@ const WlScript = ({ script, neo }: { script: Script; neo: KotakNeo }) => {
     }
     const validData = OrderShema.safeParse(data);
     if (!validData.success) {
-      console.log(validData.error.flatten());
+      // console.log(validData.error.flatten());
       toast({
         variant: "destructive",
         title: "Error",
@@ -69,7 +69,6 @@ const WlScript = ({ script, neo }: { script: Script; neo: KotakNeo }) => {
       });
       return;
     }
-    console.log(validData.data);
     const res = await neo.placeOreder({ ...validData.data });
     if (res.stat === "Ok") {
       toast({
@@ -77,7 +76,7 @@ const WlScript = ({ script, neo }: { script: Script; neo: KotakNeo }) => {
         description: `Order no: ${res.nOrdNo}`,
       });
     } else {
-      console.log(res);
+      console.error(res);
       toast({
         variant: "destructive",
         title: "Error",

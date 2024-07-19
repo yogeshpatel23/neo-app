@@ -1,4 +1,4 @@
-import { string, z } from "zod";
+import { z } from "zod";
 
 export const OrderBase = z.object({
   es: z.string(), // "nse_cm",
@@ -45,3 +45,48 @@ export const OrderShema = z.discriminatedUnion("pt", [
 ]);
 
 export type OrderType = z.infer<typeof OrderShema>;
+
+const MOrderBase = z.object({
+  es: z.string(),
+  no: z.string(),
+  qt: z.string(),
+  tk: z.string(),
+  pc: z.string(),
+  ts: z.string(),
+  tt: z.string(),
+  mp: z.string().default("0"),
+  dq: z.string().default("0"),
+  dd: z.string().default("NA"),
+  am: z.string().default("NO"),
+  vd: z.string().default("DAY"),
+});
+
+const MOrderMkt = MOrderBase.merge(
+  z.object({
+    pt: z.enum(["MKT"]),
+    pr: z.string().default("0"),
+    tp: z.string().default("0"),
+  })
+);
+const MOrderLmt = MOrderBase.merge(
+  z.object({
+    pt: z.enum(["L"]),
+    pr: z.string().min(1, { message: "Price is required" }),
+    tp: z.string().default("0"),
+  })
+);
+const MOrderStop = MOrderBase.merge(
+  z.object({
+    pt: z.enum(["SL"]),
+    pr: z.string().default("0"),
+    tp: z.string().min(1, { message: "Trg Price is required" }),
+  })
+);
+
+export const MOrderSchema = z.discriminatedUnion("pt", [
+  MOrderLmt,
+  MOrderMkt,
+  MOrderStop,
+]);
+
+// export type MOrderT

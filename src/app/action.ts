@@ -107,6 +107,7 @@ export async function getAccount() {
           token: 1,
           sid: 1,
           tokenExp: 1,
+          hsServerId: 1,
         },
       },
     ]);
@@ -149,6 +150,7 @@ export async function getAccountById(id: string) {
           token: 1,
           sid: 1,
           tokenExp: 1,
+          hsServerId: 1,
         },
       },
     ]);
