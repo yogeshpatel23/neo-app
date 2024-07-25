@@ -5,7 +5,11 @@ import Watchlist from "./Watchlist";
 import { KotakNeo } from "@/lib/KotakNeo";
 import { useToast } from "../ui/use-toast";
 import { useDispatch, useSelector } from "react-redux";
-import { initOrderlist, updateOrderltp } from "@/store/orderlistSlice";
+import {
+  initOrderlist,
+  removeOrdrer,
+  updateOrderltp,
+} from "@/store/orderlistSlice";
 import { initPositions, updatePositonltp } from "@/store/positionsSlice";
 import { RootState } from "@/store";
 import Orders from "./Orders";
@@ -13,7 +17,8 @@ import { OrderBook } from "@/types/orderbook";
 import { updateScript } from "@/store/watchlistSlice";
 import Position from "./Position";
 import { PositionBook } from "@/types/positionbook";
-import { error } from "console";
+import Link from "next/link";
+import { ArrowPathIcon, HomeIcon } from "@heroicons/react/24/outline";
 
 const Terminal = ({ account }: { account: IAccount }) => {
   const neo = new KotakNeo(
@@ -55,6 +60,7 @@ const Terminal = ({ account }: { account: IAccount }) => {
       return [];
     }
     let orders: OrderBook[] = res.data;
+    console.log(orders);
     const openOrders = orders.filter(
       (o) => o.ordSt === "open" || o.ordSt === "trigger pending"
     );
@@ -164,16 +170,17 @@ const Terminal = ({ account }: { account: IAccount }) => {
         }
         break;
       case "order":
-        console.warn(data.data);
         switch (data.data.ordSt) {
           case "open":
           case "trigger pending":
             getOrders();
-            console.error("order placed fetch order");
+            break;
+          case "complete":
+            getPosition();
+            dispatch(removeOrdrer(data.data.nOrdNo));
             break;
           case "cancelled":
-            console.warn(data.data.ordSt);
-            console.error("order placed remove order");
+            dispatch(removeOrdrer(data.data.nOrdNo));
             break;
           case "put order req received":
           case "validation pending":
@@ -182,13 +189,19 @@ const Terminal = ({ account }: { account: IAccount }) => {
           case "modify pending":
           case "modified":
           case "cancel pending":
-            console.error(data.data.ordSt);
+            // console.error(data.data.ordSt);
             break;
 
           default:
             console.error(data.data);
             break;
         }
+        break;
+      case "position":
+        toast({
+          title: "Order Placed",
+          description: `Order for ${data.data.trdSym} is placed.`,
+        });
         break;
       default:
         console.error(data);
@@ -215,14 +228,14 @@ const Terminal = ({ account }: { account: IAccount }) => {
     // Order websocket
     // @ts-ignore
     orws.current = new HSIWebSocket(
-      `wss://clhsi.kotaksecurities.com/realtime?sId=server2`
+      `wss://clhsi.kotaksecurities.com/realtime?sId=${account.hsServerId}`
     );
 
     orws.current.onclose = () => {
-      console.info("order ws close");
+      console.warn("order ws close");
     };
     orws.current.onerror = () => {
-      console.info("order ws error");
+      console.warn("order ws error");
     };
     orws.current.onopen = () => {
       orws.current.send(
@@ -239,27 +252,32 @@ const Terminal = ({ account }: { account: IAccount }) => {
   }
 
   useEffect(() => {
-    // getOrders();
-    // getPosition();
-
     connectWs();
-    // invt = setInterval(() => {
-    //   console.error(orws.current);
-    //   orws.current.send(
-    //     JSON.stringify({
-    //       type: "hb",
-    //     })
-    //   );
-    // }, 10000);
+    invt = setInterval(() => {
+      orws.current.send(
+        JSON.stringify({
+          type: "fcn",
+        })
+      );
+    }, 60000);
     return () => {
       ws.current?.close();
       orws.current?.close();
-      // if (invt) clearInterval(invt);
+      if (invt) clearInterval(invt);
     };
   }, []);
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen">
+      <div className="fixed flex gap-2 top-2 right-2 p-1 z-10">
+        <Link href="/dashboard">
+          <HomeIcon className="size-7 cursor-pointer rounded-full border border-white/50 p-1 hover:animate-pulse" />
+        </Link>
+        <ArrowPathIcon
+          onClick={connectWs}
+          className="size-7 cursor-pointer rounded-full border border-white/50 p-1 hover:animate-spin"
+        />
+      </div>
       <Watchlist neo={neo} wsfun={wsfun} />
       <div className="border grow pt-2 md:pt-4 flex flex-col">
         <div className="h-24 overflow-y-scroll">

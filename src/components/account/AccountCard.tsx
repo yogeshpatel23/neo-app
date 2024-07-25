@@ -25,17 +25,19 @@ import {
 import DeleteAccountForm from "./DeleteAccountForm";
 
 const AccountCard = ({ account }: { account: IAccount }) => {
+  const [isWorking, setIsWorking] = useState(false);
   const [showOTPInput, setShowOTPInput] = useState(false);
   const [otp, setOtp] = useState("");
 
   async function handleLogin() {
+    setIsWorking(true);
     if (await getAccessToken(account)) {
       setShowOTPInput(true);
     }
+    setIsWorking(false);
   }
 
   async function verifyOTP() {
-    console.log(otp);
     await verifyToken(account._id, otp);
     setOtp("");
     setShowOTPInput(false);
@@ -69,7 +71,7 @@ const AccountCard = ({ account }: { account: IAccount }) => {
         </div>
         {/* <pre>{JSON.stringify(account, null, 2)}</pre> */}
         <div className="p-4 border-t-2 border-white/50 flex gap-4">
-          <Button onClick={handleLogin} variant="outline">
+          <Button onClick={handleLogin} variant="outline" disabled={isWorking}>
             <FingerPrintIcon className="text-blue-800 size-4 mr-2" /> Login
           </Button>
           <Link

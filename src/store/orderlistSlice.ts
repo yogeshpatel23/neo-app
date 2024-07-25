@@ -22,7 +22,7 @@ const orderlistSlice = createSlice({
         return order;
       });
     },
-    removeOrdrer: (state, action) =>
+    removeOrdrer: (state, action: PayloadAction<string>) =>
       state.filter((order) => order.nOrdNo !== action.payload),
   },
 });

@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "../ui/select";
 import { Input } from "../ui/input";
+import { OrderShema } from "@/validation/order";
 
 const Position = ({
   position,
@@ -40,7 +41,13 @@ const Position = ({
   const qtyInpRef = useRef<HTMLInputElement>(null);
   const prcInpRef = useRef<HTMLInputElement>(null);
 
+  const exQtyInpRef = useRef<HTMLInputElement>(null);
+
   const { toast } = useToast();
+
+  let netQty = (
+    parseInt(position.flBuyQty) - parseInt(position.flSellQty)
+  ).toString();
 
   function handleSetSl() {
     if (!slInpRef.current) {
@@ -88,7 +95,7 @@ const Position = ({
     if (!sl) return;
     if (!position.lp) return;
 
-    if (parseInt(position.flBuyQty) - parseInt(position.flSellQty) > 0) {
+    if (parseInt(netQty) > 0) {
       let diff = parseFloat(position.lp) - tslPrice.current;
       if (diff > tsl) {
         setSl((prev) => prev! + diff);
@@ -96,7 +103,7 @@ const Position = ({
       }
     }
 
-    if (parseInt(position.flBuyQty) - parseInt(position.flSellQty) < 0) {
+    if (parseInt(netQty) < 0) {
       let diff = tslPrice.current - parseFloat(position.lp);
       if (diff > tsl) {
         setSl((prev) => prev! - diff);
@@ -107,57 +114,162 @@ const Position = ({
 
   if (sl) {
     if (!position.lp) return;
-    if (parseInt(position.flBuyQty) - parseInt(position.flSellQty) > 0) {
+    if (parseInt(netQty) > 0) {
       if (sl > parseFloat(position.lp)) {
         console.log("sl tiggerd");
-        handleClosePosition();
+        handleClosePosition(netQty);
       }
     }
-    if (parseInt(position.flBuyQty) - parseInt(position.flSellQty) < 0) {
+    if (parseInt(netQty) < 0) {
       if (sl < parseFloat(position.lp)) {
         console.log("sl tiggerd");
-        handleClosePosition();
+        handleClosePosition(netQty);
       }
     }
   }
 
   if (tgt) {
     if (!position.lp) return;
-    if (parseInt(position.flBuyQty) - parseInt(position.flSellQty) > 0) {
+    if (parseInt(netQty) > 0) {
       if (tgt < parseFloat(position.lp)) {
         console.log("Target Hit");
-        handleClosePosition();
+        handleClosePosition(netQty);
       }
     }
-    if (parseInt(position.flBuyQty) - parseInt(position.flSellQty) < 0) {
+    if (parseInt(netQty) < 0) {
       if (tgt > parseFloat(position.lp)) {
         console.log("Target Hit");
-        handleClosePosition();
+        handleClosePosition(netQty);
       }
     }
   }
 
-  async function handleClosePosition() {
-    console.log("Positon close");
+  async function handleClosePosition(qty: string) {
+    setSl(null);
+    setTsl(null);
+    setTgt(null);
+    tslPrice.current = null;
+    let data = {
+      exch: position.exSeg,
+      tsym: position.trdSym,
+      qty: Math.abs(parseInt(qty)).toString(),
+      prd: position.prod,
+      trantype: parseInt(netQty) < 0 ? "B" : "S",
+      prctyp: "LMT",
+      prc: (
+        parseFloat(position.lp!) -
+        Math.round((parseFloat(position.lp!) * 0.01) / 0.05) * 0.05
+      ).toString(),
+    };
+
+    const validData = OrderShema.safeParse(data);
+    if (!validData.success) {
+      console.log(validData.error.flatten());
+      return;
+    }
+
+    const res = await neo.placeOreder({ ...validData.data });
+    if (res.stat === "Ok") {
+      toast({
+        title: "Position Closed",
+        description: `Order no: ${res.nOrdNo}`,
+      });
+    } else {
+      console.error(res);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: res.errMsg,
+      });
+    }
   }
 
   async function newOrder() {
-    console.log("PLACE NEW ORDER");
+    if (!position.lp) return;
+    const data: any = {
+      es: position.exSeg,
+      pc: "MIS",
+      pt: prctyp,
+      tt: "B",
+      ts: position.trdSym,
+      pr: (
+        parseFloat(position.lp ?? "0") +
+        Math.round((parseFloat(position.lp ?? "0") * 0.01) / 0.05) * 0.05
+      ).toString(),
+      qt: qtyInpRef.current?.value,
+    };
+
+    if (prctyp === "L") {
+      if (!prcInpRef.current) return;
+      data.pr = prcInpRef.current.value;
+    }
+
+    if (prctyp === "SL") {
+      if (!prcInpRef.current) return;
+      if (parseFloat(prcInpRef.current.value) < parseFloat(position.lp)) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Triger price greater then LTP",
+        });
+        return;
+      }
+      data.tp = prcInpRef.current.value;
+      data.pr = (
+        parseFloat(prcInpRef.current.value) +
+        Math.round((parseFloat(prcInpRef.current.value) * 0.01) / 0.05) * 0.05
+      ).toString();
+    }
+    const validData = OrderShema.safeParse(data);
+    if (!validData.success) {
+      // console.log(validData.error.flatten());
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Some field are missing",
+      });
+      return;
+    }
+
+    const res = await neo.placeOreder({ ...validData.data });
+    if (res.stat === "Ok") {
+      toast({
+        title: "Order placed",
+        description: `Order no: ${res.nOrdNo}`,
+      });
+    } else {
+      console.error(res);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: res.errMsg,
+      });
+    }
   }
 
-  return parseInt(position.flBuyQty) - parseInt(position.flSellQty) !== 0 ? (
+  return parseInt(netQty) !== 0 ? (
     <div className="flex justify-between items-center text-xs md:text-sm border-y px-2 gap-4 mt-1 p-1">
       <div className="w-full flex flex-col lg:flex-row justify-between items-center">
         <div className="w-full flex text-xs justify-start gap-2">
           <span>{position.trdSym}</span>
           <span>
-            Qty:{parseInt(position.flBuyQty) - parseInt(position.flSellQty)} |
-            AP: 0 | LP:
+            Qty:{netQty} | AP: 0 | LP:
             {position.lp}
           </span>
         </div>
         <div className="w-full flex justify-between lg:justify-end gap-4">
-          <div>Exit Qty</div>
+          <div className="relative text-xs pt-4">
+            <Input
+              className="w-16 h-6 text-xs"
+              type="number"
+              ref={exQtyInpRef}
+              max={netQty}
+              min={position.lotSz}
+              step={position.lotSz}
+              defaultValue={position.flBuyQty}
+            />
+            <span className="absolute top-0 left-0">Qty</span>
+          </div>
           {/* SL input */}
           {editSl ? (
             <div className="flex items-center">
@@ -176,9 +288,12 @@ const Position = ({
               />
             </div>
           ) : sl ? (
-            <span onClick={() => setEditSl(true)} className="cursor-pointer">
-              {sl}
-            </span>
+            <div className="relative text-xs pt-4">
+              <span onClick={() => setEditSl(true)} className="cursor-pointer">
+                {sl}
+              </span>
+              <span className="absolute top-0 left-0 text-red-600">SL</span>
+            </div>
           ) : (
             <span onClick={() => setEditSl(true)} className="cursor-pointer">
               Set SL
@@ -246,10 +361,19 @@ const Position = ({
               parseFloat(position.prcftr) +
             parseFloat(position.rpnl)
           ).toFixed(2)} */}
-          npl cl
+          {(
+            parseInt(netQty) * parseFloat(position.lp ?? "0") +
+            parseFloat(position.sellAmt) -
+            parseFloat(position.buyAmt)
+          ).toFixed(2)}
         </div>
         <Button
-          onClick={handleClosePosition}
+          onClick={() => {
+            let qty = exQtyInpRef.current?.value
+              ? exQtyInpRef.current?.value
+              : netQty;
+            handleClosePosition(qty);
+          }}
           variant="outline"
           size="sm"
           className="h-6 p-2"
@@ -261,7 +385,9 @@ const Position = ({
   ) : showNewOrder ? (
     <div className="flex justify-between items-center text-xs md:text-sm border-y px-2 gap-4 mt-1 p-1">
       <div className="w-full flex flex-row items-center gap-2">
-        <span className="w-20 lg:w-60 overflow-hidden">{position.trdSym}</span>
+        <span className="w-20 lg:w-60 overflow-hidden grow">
+          {position.trdSym}
+        </span>
         <div className="flex items-center gap-2 md:gap-4">
           <Input
             ref={qtyInpRef}
@@ -279,7 +405,7 @@ const Position = ({
             <SelectContent>
               <SelectItem value="L">LMT</SelectItem>
               <SelectItem value="MKT">MARKET</SelectItem>
-              <SelectItem value="SL">MARKET</SelectItem>
+              <SelectItem value="SL">SL</SelectItem>
             </SelectContent>
           </Select>
           <Input
