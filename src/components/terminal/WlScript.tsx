@@ -28,7 +28,7 @@ const WlScript = ({ script, neo }: { script: Script; neo: KotakNeo }) => {
   async function handleOrder() {
     const data: any = {
       es: script.exseg,
-      pc: "MIS",
+      pc: script.exseg != "nse_cm" ? "NRML" : "MIS",
       pt: prctyp,
       tt: "B",
       ts: script.trdSymbol,

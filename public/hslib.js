@@ -4977,7 +4977,7 @@ function startHsiServer(a) {
     hsiSocket.onopen();
   };
   hsiWs.onmessage = function (c) {
-    console.log(c);
+    // console.log(c);
     let data = c.data;
     HSIDebug(data);
     if (data) {

@@ -60,7 +60,6 @@ const Terminal = ({ account }: { account: IAccount }) => {
       return [];
     }
     let orders: OrderBook[] = res.data;
-    console.log(orders);
     const openOrders = orders.filter(
       (o) => o.ordSt === "open" || o.ordSt === "trigger pending"
     );

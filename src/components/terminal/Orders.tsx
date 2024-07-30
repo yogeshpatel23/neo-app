@@ -50,8 +50,8 @@ const Orders = ({ order, neo }: { order: OrderBook; neo: KotakNeo }) => {
 
     if (prctyp === "MKT") {
       data["pr"] = (
-        parseFloat(order.ltp ?? "0") +
-        Math.round((parseFloat(order.ltp ?? "0") * 0.01) / 0.05) * 0.05
+        parseFloat(order.ltp) +
+        Math.round((parseFloat(order.ltp) * 0.01) / 0.05) * 0.05
       ).toString();
     }
 

@@ -116,13 +116,13 @@ const Position = ({
     if (!position.lp) return;
     if (parseInt(netQty) > 0) {
       if (sl > parseFloat(position.lp)) {
-        console.log("sl tiggerd");
+        console.log("sl buy tiggerd");
         handleClosePosition(netQty);
       }
     }
     if (parseInt(netQty) < 0) {
       if (sl < parseFloat(position.lp)) {
-        console.log("sl tiggerd");
+        console.log("sl sell tiggerd");
         handleClosePosition(netQty);
       }
     }
@@ -150,13 +150,13 @@ const Position = ({
     setTgt(null);
     tslPrice.current = null;
     let data = {
-      exch: position.exSeg,
-      tsym: position.trdSym,
-      qty: Math.abs(parseInt(qty)).toString(),
-      prd: position.prod,
-      trantype: parseInt(netQty) < 0 ? "B" : "S",
-      prctyp: "LMT",
-      prc: (
+      es: position.exSeg,
+      ts: position.trdSym,
+      qt: Math.abs(parseInt(qty)).toString(),
+      pc: position.prod,
+      tt: parseInt(netQty) < 0 ? "B" : "S",
+      pt: "L",
+      pr: (
         parseFloat(position.lp!) -
         Math.round((parseFloat(position.lp!) * 0.01) / 0.05) * 0.05
       ).toString(),
@@ -188,7 +188,7 @@ const Position = ({
     if (!position.lp) return;
     const data: any = {
       es: position.exSeg,
-      pc: "MIS",
+      pc: position.exSeg != "nse_cm" ? "NRML" : "MIS",
       pt: prctyp,
       tt: "B",
       ts: position.trdSym,
@@ -253,7 +253,12 @@ const Position = ({
         <div className="w-full flex text-xs justify-start gap-2">
           <span>{position.trdSym}</span>
           <span>
-            Qty:{netQty} | AP: 0 | LP:
+            Qty:{netQty} | AP:{" "}
+            {(
+              (parseFloat(position.buyAmt) - parseFloat(position.sellAmt)) /
+              parseInt(netQty)
+            ).toFixed(2)}{" "}
+            | LP:
             {position.lp}
           </span>
         </div>
@@ -261,12 +266,13 @@ const Position = ({
           <div className="relative text-xs pt-4">
             <Input
               className="w-16 h-6 text-xs"
+              key={netQty}
               type="number"
               ref={exQtyInpRef}
               max={netQty}
               min={position.lotSz}
               step={position.lotSz}
-              defaultValue={position.flBuyQty}
+              defaultValue={netQty}
             />
             <span className="absolute top-0 left-0">Qty</span>
           </div>
