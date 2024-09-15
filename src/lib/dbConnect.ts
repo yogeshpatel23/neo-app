@@ -26,15 +26,23 @@ async function dbConnect() {
   if (!cached.promise) {
     const opts = {
       dbName: process.env.DBNAME,
-      bufferCommands: false,
+      bufferCommands: true,
     };
 
     cached.promise = mongoose
       .connect(MONGODB_URL, opts)
-      .then((mongoose) => mongoose);
+      .then((mongoose) => mongoose)
+      .catch((err) => {
+        console.log("monggose error");
+        console.log(err.message);
+      });
   }
-
-  cached.conn = await cached.promise;
+  try {
+    cached.conn = await cached.promise;
+  } catch (err: any) {
+    console.log("mongo connect error");
+    console.log(err.message);
+  }
   return cached.conn;
 }
 
