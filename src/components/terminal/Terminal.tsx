@@ -1,6 +1,6 @@
 "use client";
 import { IAccount } from "@/models/Account";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Watchlist from "./Watchlist";
 import { KotakNeo } from "@/lib/KotakNeo";
 import { useToast } from "../ui/use-toast";
@@ -18,7 +18,22 @@ import { updateScript } from "@/store/watchlistSlice";
 import Position from "./Position";
 import { PositionBook } from "@/types/positionbook";
 import Link from "next/link";
-import { ArrowPathIcon, HomeIcon } from "@heroicons/react/24/outline";
+import {
+  ExclamationTriangleIcon,
+  HomeIcon,
+  SignalIcon,
+  SignalSlashIcon,
+} from "@heroicons/react/24/outline";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
 
 const Terminal = ({ account }: { account: IAccount }) => {
   const neo = new KotakNeo(
@@ -29,6 +44,10 @@ const Terminal = ({ account }: { account: IAccount }) => {
   );
   const { toast } = useToast();
   const dispatch = useDispatch();
+  const [isWsOpen, setIsWsOpen] = useState(false);
+  const [isOWsOpen, setIsOWsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [oOpen, setOOpen] = useState(false);
 
   const orders = useSelector((store: RootState) => store.orderlist);
   const positons = useSelector((store: RootState) => store.positions);
@@ -84,7 +103,9 @@ const Terminal = ({ account }: { account: IAccount }) => {
   }
 
   function wsOpen() {
-    console.info("wsoptn");
+    console.info("touch wsoptn");
+    setIsWsOpen(true);
+    setOpen(false);
     ws.current.send(
       JSON.stringify({
         Authorization: account.token!,
@@ -147,7 +168,6 @@ const Terminal = ({ account }: { account: IAccount }) => {
   }
 
   function wsfun(exch: string, tk: string) {
-    console.log(exch, tk);
     ws.current.send(
       JSON.stringify({
         type: "mws",
@@ -214,16 +234,20 @@ const Terminal = ({ account }: { account: IAccount }) => {
     // @ts-ignore
     ws.current = new HSWebSocket(url);
     ws.current.onclose = () => {
-      console.info("ws close");
+      console.info("touch ws close");
+      setIsWsOpen(false);
+      setOpen(true);
     };
     ws.current.onerror = () => {
-      console.info("ws error");
+      console.info("touch ws error");
     };
 
     ws.current.onmessage = wsMsg;
 
     ws.current.onopen = wsOpen;
+  }
 
+  function connectOWs() {
     // Order websocket
     // @ts-ignore
     orws.current = new HSIWebSocket(
@@ -232,11 +256,16 @@ const Terminal = ({ account }: { account: IAccount }) => {
 
     orws.current.onclose = () => {
       console.warn("order ws close");
+      setIsOWsOpen(false);
+      setOOpen(true);
     };
     orws.current.onerror = () => {
       console.warn("order ws error");
     };
     orws.current.onopen = () => {
+      console.warn("order ws optn");
+      setIsOWsOpen(true);
+      setOOpen(false);
       orws.current.send(
         JSON.stringify({
           type: "cn",
@@ -252,6 +281,7 @@ const Terminal = ({ account }: { account: IAccount }) => {
 
   useEffect(() => {
     connectWs();
+    connectOWs();
     invt = setInterval(() => {
       orws.current.send(
         JSON.stringify({
@@ -272,10 +302,17 @@ const Terminal = ({ account }: { account: IAccount }) => {
         <Link href="/dashboard">
           <HomeIcon className="size-7 cursor-pointer rounded-full border border-white/50 p-1 hover:animate-pulse" />
         </Link>
-        <ArrowPathIcon
-          onClick={connectWs}
-          className="size-7 cursor-pointer rounded-full border border-white/50 p-1 hover:animate-spin"
-        />
+        {isWsOpen && isOWsOpen ? (
+          <SignalIcon
+            onClick={connectWs}
+            className="size-7 cursor-pointer rounded-full border border-white/50 p-1 text-green-500 animate-pulse hover:animate-spin"
+          />
+        ) : (
+          <SignalSlashIcon
+            onClick={connectWs}
+            className="size-7 cursor-pointer rounded-full border border-white/50 p-1 text-red-500 hover:animate-spin"
+          />
+        )}
       </div>
       <Watchlist neo={neo} wsfun={wsfun} />
       <div className="border grow pt-2 md:pt-4 flex flex-col">
@@ -300,6 +337,40 @@ const Terminal = ({ account }: { account: IAccount }) => {
           )}
         </div>
       </div>
+      <AlertDialog open={open} onOpenChange={setOpen}>
+        <AlertDialogContent className="border-red-500">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-4 text-red-500">
+              <ExclamationTriangleIcon className="size-10" />
+              Websocket is Disconnected!
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Touchline websocket is Disconnected. Please reconnect.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={connectWs}>Refresh</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={oOpen} onOpenChange={setOOpen}>
+        <AlertDialogContent className="border-red-500">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-4 text-red-500">
+              <ExclamationTriangleIcon className="size-10" />
+              Websocket is Disconnected!
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Order & Positon websocket is Disconnected. Please reconnect.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={connectOWs}>Refresh</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
