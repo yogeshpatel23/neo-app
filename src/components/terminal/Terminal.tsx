@@ -51,17 +51,7 @@ const Terminal = ({ account }: { account: IAccount }) => {
 
   const orders = useSelector((store: RootState) => store.orderlist);
   const positons = useSelector((store: RootState) => store.positions);
-  const {
-    ceScript,
-    peScript,
-    ceScript2,
-    peScript2,
-    ceScript3,
-    peScript3,
-    ceScript4,
-    peScript4,
-    eqScript,
-  } = useSelector((store: RootState) => store.watchlist);
+  const watchlist = useSelector((store: RootState) => store.watchlist);
 
   let invt: NodeJS.Timeout;
 
@@ -121,15 +111,7 @@ const Terminal = ({ account }: { account: IAccount }) => {
     if (data[0].stat === "Ok" && data[0].type === "cn") {
       let tokens: string[] = [];
 
-      if (ceScript) tokens.push(`${ceScript.exseg}|${ceScript.exchangeId}`);
-      if (peScript) tokens.push(`${peScript.exseg}|${peScript.exchangeId}`);
-      if (ceScript2) tokens.push(`${ceScript2.exseg}|${ceScript2.exchangeId}`);
-      if (peScript2) tokens.push(`${peScript2.exseg}|${peScript2.exchangeId}`);
-      if (ceScript3) tokens.push(`${ceScript3.exseg}|${ceScript3.exchangeId}`);
-      if (peScript3) tokens.push(`${peScript3.exseg}|${peScript3.exchangeId}`);
-      if (ceScript4) tokens.push(`${ceScript4.exseg}|${ceScript4.exchangeId}`);
-      if (peScript4) tokens.push(`${peScript4.exseg}|${peScript4.exchangeId}`);
-      if (eqScript) tokens.push(`${eqScript.exseg}|${eqScript.exchangeId}`);
+      // TODO: get tokens
 
       Promise.allSettled([getOrders(), getPosition()]).then((responses) => {
         if (responses[0].status === "fulfilled") {

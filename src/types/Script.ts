@@ -1,21 +1,31 @@
 export type Script = {
-  exchange: string; // "NSE",
-  instType: string; // "OI",
-  series: string; // "-",
-  optType: string; // "CE-CALL",
-  symbol: string; // "FINNIFTY",
-  strikePrice: string; // "24500.00",
-  exchangeId: string; // "48213",
-  tickSize: string; // "0.05",
-  lotSize: string; // "40",
-  trdSymbol: string; // "FINNIFTY2471624500CE",
-  exseg: string; // "nse_fo",
-  multipler: string; // 1,
-  precision: string; // 2,
-  numerator: string; // 1,
-  denominator: string; // 1,
-  instGroup: string; // "OPT",
-  indexExpiryType: string; // "Weekly",
-  readableExpiryDate?: string; // "16-JUL-2024"
+  exchange: "NSE" | "BSE";
+  instType: "EQ" | "FS" | "OS" | "OI" | "FI" | "IF" | "-";
+  series: "EQ" | "A";
+  optType: "-" | "XX" | "PE-PUT" | "CE-CALL";
+  symbol: string;
+  company: string;
+  strikePrice: string;
+  scripKey: string;
+  exchangeId: string;
+  tickSize: string;
+  lotSize: string;
+  coCode: string;
+  trdSymbol: string;
+  altExchangeId: string;
+  altExchange: string;
+  exseg: string; // "nse_cm","bse_cm","nse_fo"
+  multipler: number;
+  precision: number;
+  numerator: number;
+  denominator: number;
+  quotationUnit: string;
+  quotationPrice: number;
+  instGroup: string;
+  indexExpiryType: string;
+  expiryDate: string;
+  underlyingCompanyName: string;
+  corpType: string;
+  readableExpiryDate?: string;
   ltp?: string;
 };
