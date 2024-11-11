@@ -25,7 +25,11 @@ const Watchlist = ({ neo, wsfun }: { neo: KotakNeo; wsfun: Function }) => {
     if (stext.length < 3) return;
     const to = setTimeout(async () => {
       let queryString = btoa(stext.toUpperCase());
-      setSearchResult(await neo.searchScript(queryString));
+      try {
+        setSearchResult(await neo.searchScript(queryString));
+      } catch (e) {
+        console.log(e);
+      }
     }, 1000);
     return () => {
       clearTimeout(to);
@@ -109,7 +113,7 @@ const Watchlist = ({ neo, wsfun }: { neo: KotakNeo; wsfun: Function }) => {
         onValueChange={(val) => {
           setTabId(val);
         }}
-        className="flex flex-col grow pb-4"
+        className="flex flex-col grow pb-4 min-h-72"
       >
         <div className="grow">
           <TabsContent

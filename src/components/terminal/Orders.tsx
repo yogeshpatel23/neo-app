@@ -99,10 +99,11 @@ const Orders = ({ order, neo }: { order: OrderBook; neo: KotakNeo }) => {
 
   return editMode ? (
     <div className="flex justify-between items-center bg-gray-600 text-xs md:text-sm border-y px-2 gap-4">
-      <div className="w-full flex flex-col md:flex-row justify-between gap-2 md:gap-8">
+      <div className="w-full flex flex-col md:flex-row justify-start gap-2 md:gap-8">
         <div className="flex justify-between grow">
           <div>{order.trdSym}</div>
-          <div>
+          <div className="flex items-center gap-2">
+            Qty:
             <Input
               id="qty"
               defaultValue={order.qty}
@@ -115,7 +116,7 @@ const Orders = ({ order, neo }: { order: OrderBook; neo: KotakNeo }) => {
             />
           </div>
         </div>
-        <div className="flex justify-between grow">
+        <div className="flex justify-between md:justify-start gap-4">
           <div>
             <Select value={prctyp} onValueChange={(v) => setPrctyp(v)}>
               <SelectTrigger id="prctyp" className="h-6">
@@ -128,7 +129,8 @@ const Orders = ({ order, neo }: { order: OrderBook; neo: KotakNeo }) => {
               </SelectContent>
             </Select>
           </div>
-          <div>
+          <div className="flex items-center gap-2">
+            Price
             <Input
               type="number"
               ref={prcRef}
@@ -161,16 +163,15 @@ const Orders = ({ order, neo }: { order: OrderBook; neo: KotakNeo }) => {
     </div>
   ) : (
     <div className="flex justify-between items-center text-xs md:text-sm border-y px-2 gap-4">
-      <div className="w-full flex flex-col md:flex-row justify-between gap-2 md:gap-8">
-        <div className="flex justify-between grow">
-          <div>{order.trdSym}</div>
-          <div>{order.qty}</div>
+      <div className="w-full flex flex-col md:flex-row justify-start gap-2 md:gap-4">
+        <div className="flex justify-between gap-4 grow">
+          <div>{order.trdSym} SELL</div>
+          <div>Qty: {order.qty}</div>
         </div>
-        <div className="flex justify-between grow">
+        <div className="flex justify-between md:justify-start gap-4">
           <div>{order.prcTp}</div>
-          <div>
-            {order.prc}/{order.ltp ?? "00.00"}
-          </div>
+          <div>Order Price: {order.prc}</div>
+          <div>LTP:{order.ltp ?? "00.00"}</div>
         </div>
       </div>
       <div className="flex flex-col md:flex-row gap-1">

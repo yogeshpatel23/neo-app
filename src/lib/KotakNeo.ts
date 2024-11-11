@@ -19,7 +19,7 @@ export class KotakNeo {
 
   async searchScript(text: string): Promise<Script[]> {
     const res = await fetch(
-      `https://lapi.kotaksecurities.com/60search/scrips/${text}`,
+      `https://neo.kotaksecurities.com/api/60search/scrips/${text}`,
       {
         method: "GET",
         headers: {

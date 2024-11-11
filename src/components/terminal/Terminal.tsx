@@ -270,7 +270,7 @@ const Terminal = ({ account }: { account: IAccount }) => {
           type: "fcn",
         })
       );
-    }, 60000);
+    }, 30000);
     return () => {
       ws.current?.close();
       orws.current?.close();
@@ -298,7 +298,7 @@ const Terminal = ({ account }: { account: IAccount }) => {
       </div>
       <Watchlist neo={neo} wsfun={wsfun} />
       <div className="border grow pt-2 md:pt-4 flex flex-col">
-        <div className="h-24 overflow-y-scroll">
+        <div className="h-36 overflow-y-scroll">
           <h2 className="text-sm text-green-600 px-2">Orders</h2>
           {orders.length === 0 ? (
             <p className="px-2">No Order to show</p>

@@ -27,6 +27,9 @@ const WlScript = ({
   tabid: string;
 }) => {
   const [prctyp, setPrctyp] = useState("L");
+  const [intraday, setIntrady] = useState(
+    script.exseg === "nse_cm" ? true : false
+  );
 
   const qtyRef = useRef<HTMLInputElement>(null);
   const prcRef = useRef<HTMLInputElement>(null);
@@ -34,17 +37,24 @@ const WlScript = ({
   const { toast } = useToast();
   const dispatch = useDispatch();
 
-  async function handleOrder() {
+  async function handleOrder(tt: string) {
+    if (!script.ltp) return;
     const data: any = {
       es: script.exseg,
-      pc: script.exseg != "nse_cm" ? "NRML" : "MIS",
+      pc: intraday ? "MIS" : script.exseg === "nse_cm" ? "CNC" : "NRML",
       pt: prctyp,
-      tt: "B",
+      tt: tt,
       ts: script.trdSymbol,
-      pr: (
-        parseFloat(script.ltp ?? "0") +
-        Math.round((parseFloat(script.ltp ?? "0") * 0.01) / 0.05) * 0.05
-      ).toString(),
+      pr:
+        tt === "B"
+          ? (
+              parseFloat(script.ltp) +
+              Math.round((parseFloat(script.ltp) * 0.01) / 0.05) * 0.05
+            ).toFixed(script.precision)
+          : (
+              parseFloat(script.ltp) -
+              Math.round((parseFloat(script.ltp) * 0.01) / 0.05) * 0.05
+            ).toFixed(script.precision),
       qt: qtyRef.current?.value,
     };
 
@@ -55,18 +65,43 @@ const WlScript = ({
 
     if (prctyp === "SL") {
       if (!prcRef.current) return;
-      if (parseFloat(prcRef.current.value) < parseFloat(script.ltp!)) {
+      if (
+        tt === "B" &&
+        parseFloat(prcRef.current.value) < parseFloat(script.ltp!)
+      ) {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Triger price greate then LTP",
+          description: "Trigger price higher then LTP",
         });
+        prcRef.current.classList.add("border-red-500");
+        return;
+      }
+      if (
+        tt === "S" &&
+        parseFloat(prcRef.current.value) > parseFloat(script.ltp!)
+      ) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Trigger price lower then LTP",
+        });
+        prcRef.current.classList.add("border-red-500");
+        return;
       }
       data.tp = prcRef.current.value;
-      data.pr = (
-        parseFloat(prcRef.current.value) +
-        Math.round((parseFloat(prcRef.current.value) * 0.01) / 0.05) * 0.05
-      ).toString();
+      data.pr =
+        tt === "B"
+          ? (
+              parseFloat(prcRef.current.value) +
+              Math.round((parseFloat(prcRef.current.value) * 0.01) / 0.05) *
+                0.05
+            ).toFixed(script.precision)
+          : (
+              parseFloat(prcRef.current.value) -
+              Math.round((parseFloat(prcRef.current.value) * 0.01) / 0.05) *
+                0.05
+            ).toFixed(script.precision);
     }
     const validData = OrderShema.safeParse(data);
     if (!validData.success) {
@@ -78,6 +113,8 @@ const WlScript = ({
       });
       return;
     }
+    prcRef.current?.classList.remove("border-red-500");
+    console.log(validData.data);
     const res = await neo.placeOreder({ ...validData.data });
     if (res.stat === "Ok") {
       toast({
@@ -103,9 +140,16 @@ const WlScript = ({
       </div>
       <div className="flex gap-2">
         <label className="inline-flex items-center cursor-pointer">
-          <input type="checkbox" value="" className="sr-only peer" />
+          <input
+            type="checkbox"
+            checked={intraday}
+            onChange={() => {
+              setIntrady(!intraday);
+            }}
+            className="sr-only peer"
+          />
           <div
-            className="relative w-20 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-['MIS'] peer-checked:after:content-['CNC']
+            className="relative w-20 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-['CNC'] peer-checked:after:content-['MIS']
           after:text-gray-800 after:text-center after:text-sm after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-10 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"
           ></div>
         </label>
@@ -140,14 +184,18 @@ const WlScript = ({
       </div>
       <div className="flex justify-around items-center">
         <Button
-          onClick={handleOrder}
+          onClick={() => {
+            handleOrder("S");
+          }}
           size="sm"
           className="p-2 h-6 w-16 font-bold text-sm bg-rose-600"
         >
           Sell
         </Button>
         <Button
-          onClick={handleOrder}
+          onClick={() => {
+            handleOrder("B");
+          }}
           size="sm"
           className="p-2 h-6 w-16 font-bold text-sm bg-teal-500 text-white"
         >
