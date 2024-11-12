@@ -315,3 +315,24 @@ export async function verifyToken(id: string, otp: string) {
   }
   revalidatePath("/dashboard");
 }
+
+export async function searchtest(text: string, accessToken: string) {
+  const res = await fetch(
+    `https://neo.kotaksecurities.com/api/60search/scrips/${text}`,
+    {
+      method: "GET",
+      headers: {
+        Accept: "*/*",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  const resData = await res.json();
+  if (res.status === 200) {
+    return resData.data.scrips;
+  } else {
+    console.log(resData);
+  }
+  return [];
+}

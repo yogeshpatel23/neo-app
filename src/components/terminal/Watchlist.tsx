@@ -10,6 +10,7 @@ import { addToWatchlist } from "@/store/watchlistSlice";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import WlScript from "./WlScript";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import { searchtest } from "@/app/action";
 
 const Watchlist = ({ neo, wsfun }: { neo: KotakNeo; wsfun: Function }) => {
   const [tabId, setTabId] = useState("1");
@@ -26,7 +27,7 @@ const Watchlist = ({ neo, wsfun }: { neo: KotakNeo; wsfun: Function }) => {
     const to = setTimeout(async () => {
       let queryString = btoa(stext.toUpperCase());
       try {
-        setSearchResult(await neo.searchScript(queryString));
+        setSearchResult(await searchtest(queryString, neo.accessToken));
       } catch (e) {
         console.log(e);
       }
