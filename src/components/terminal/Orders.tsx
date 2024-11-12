@@ -15,6 +15,7 @@ import { Input } from "../ui/input";
 import { KotakNeo } from "@/lib/KotakNeo";
 import { useToast } from "../ui/use-toast";
 import { MOrderSchema } from "@/validation/order";
+import { Span } from "next/dist/trace";
 
 const Orders = ({ order, neo }: { order: OrderBook; neo: KotakNeo }) => {
   const [editMode, setEditMode] = useState(false);
@@ -99,9 +100,11 @@ const Orders = ({ order, neo }: { order: OrderBook; neo: KotakNeo }) => {
 
   return editMode ? (
     <div className="flex justify-between items-center bg-gray-600 text-xs md:text-sm border-y px-2 gap-4">
-      <div className="w-full flex flex-col md:flex-row justify-start gap-2 md:gap-8">
-        <div className="flex justify-between grow">
-          <div>{order.trdSym}</div>
+      <div className="w-full flex flex-col md:flex-row justify-start md:items-center gap-2 md:gap-8">
+        <div className="flex justify-between items-center grow">
+          <div className="md:w-20 lg:w-60 overflow-hidden h-6">
+            {order.trdSym}
+          </div>
           <div className="flex items-center gap-2">
             Qty:
             <Input
@@ -165,13 +168,22 @@ const Orders = ({ order, neo }: { order: OrderBook; neo: KotakNeo }) => {
     <div className="flex justify-between items-center text-xs md:text-sm border-y px-2 gap-4">
       <div className="w-full flex flex-col md:flex-row justify-start gap-2 md:gap-4">
         <div className="flex justify-between gap-4 grow">
-          <div>{order.trdSym} SELL</div>
+          <div>
+            {order.trdSym}{" "}
+            {order.trnsTp === "B" ? (
+              <span className="bg-teal-400 px-1 rounded text-black">Buy</span>
+            ) : (
+              <span className="bg-rose-400 px-1 rounded text-black">Sell</span>
+            )}
+          </div>
           <div>Qty: {order.qty}</div>
         </div>
         <div className="flex justify-between md:justify-start gap-4">
-          <div>{order.prcTp}</div>
+          <div className="w-20">
+            {order.prcTp === "L" ? "Limit" : "Stop Limit"}
+          </div>
           <div>Order Price: {order.prc}</div>
-          <div>LTP:{order.ltp ?? "00.00"}</div>
+          <div className="w-20">LTP:{order.ltp ?? "00.00"}</div>
         </div>
       </div>
       <div className="flex flex-col md:flex-row gap-1">

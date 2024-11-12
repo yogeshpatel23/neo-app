@@ -114,7 +114,6 @@ const WlScript = ({
       return;
     }
     prcRef.current?.classList.remove("border-red-500");
-    console.log(validData.data);
     const res = await neo.placeOreder({ ...validData.data });
     if (res.stat === "Ok") {
       toast({

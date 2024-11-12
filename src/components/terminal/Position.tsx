@@ -168,7 +168,9 @@ const Position = ({
       return;
     }
 
-    const res = await neo.placeOreder({ ...validData.data });
+    console.log(validData.data);
+
+    /* const res = await neo.placeOreder({ ...validData.data });
     if (res.stat === "Ok") {
       toast({
         title: "Position Closed",
@@ -181,7 +183,7 @@ const Position = ({
         title: "Error",
         description: res.errMsg,
       });
-    }
+    } */
   }
 
   async function newOrder() {
@@ -230,8 +232,8 @@ const Position = ({
       });
       return;
     }
-
-    const res = await neo.placeOreder({ ...validData.data });
+    console.log(validData.data);
+    /* const res = await neo.placeOreder({ ...validData.data });
     if (res.stat === "Ok") {
       toast({
         title: "Order placed",
@@ -244,12 +246,12 @@ const Position = ({
         title: "Error",
         description: res.errMsg,
       });
-    }
+    } */
   }
 
   return parseInt(netQty) !== 0 ? (
     <div className="flex justify-between items-center text-xs md:text-sm border-y px-2 gap-4 mt-1 p-1">
-      <div className="w-full flex flex-col lg:flex-row justify-between items-center">
+      <div className="w-full flex flex-col lg:flex-row gap-2 justify-between items-center">
         <div className="w-full flex text-xs justify-start gap-2">
           <span>{position.trdSym}</span>
           <span>
@@ -262,10 +264,11 @@ const Position = ({
             {position.lp}
           </span>
         </div>
-        <div className="w-full flex justify-between lg:justify-end gap-4">
-          <div className="relative text-xs pt-4">
+        <div className="w-full flex justify-between items-center lg:justify-end gap-4">
+          <div className="relative flex text-xs items-center gap-2">
+            <span className="">Qty</span>
             <Input
-              className="w-16 h-6 text-xs"
+              className="w-12 h-6 text-xs px-2"
               key={netQty}
               type="number"
               ref={exQtyInpRef}
@@ -273,8 +276,8 @@ const Position = ({
               min={position.lotSz}
               step={position.lotSz}
               defaultValue={netQty}
+              placeholder="Qty"
             />
-            <span className="absolute top-0 left-0">Qty</span>
           </div>
           {/* SL input */}
           {editSl ? (
@@ -285,8 +288,8 @@ const Position = ({
               />
               <Input
                 ref={slInpRef}
-                defaultValue={sl ?? ""}
-                className="w-20 h-6 text-xs"
+                defaultValue={sl ? sl : ""}
+                className="w-12 h-6 text-x px-2"
               />
               <CheckIcon
                 onClick={handleSetSl}
@@ -294,14 +297,17 @@ const Position = ({
               />
             </div>
           ) : sl ? (
-            <div className="relative text-xs pt-4">
+            <div className="relative w-20 text-xs flex gap-2">
+              <span className="text-red-600">SL :</span>
               <span onClick={() => setEditSl(true)} className="cursor-pointer">
                 {sl}
               </span>
-              <span className="absolute top-0 left-0 text-red-600">SL</span>
             </div>
           ) : (
-            <span onClick={() => setEditSl(true)} className="cursor-pointer">
+            <span
+              onClick={() => setEditSl(true)}
+              className="cursor-pointer text-xs w-20"
+            >
               Set SL
             </span>
           )}
@@ -314,8 +320,9 @@ const Position = ({
               />
               <Input
                 ref={tslInpRef}
-                defaultValue={tsl ?? ""}
-                className="w-12 h-6 text-xs"
+                defaultValue={tsl ? tsl : ""}
+                placeholder="TSL"
+                className="w-12 h-6 text-xs px-2"
               />
               <CheckIcon
                 onClick={handleSetTsl}
@@ -323,11 +330,17 @@ const Position = ({
               />
             </div>
           ) : tsl ? (
-            <span onClick={() => setEditTsl(true)} className="cursor-pointer">
-              {tsl}
-            </span>
+            <div className="relative text-xs flex gap-2 w-20">
+              <span className="text-red-600">TSL :</span>
+              <span onClick={() => setEditTsl(true)} className="cursor-pointer">
+                {tsl}
+              </span>
+            </div>
           ) : (
-            <span onClick={() => setEditTsl(true)} className="cursor-pointer">
+            <span
+              onClick={() => setEditTsl(true)}
+              className="cursor-pointer text-xs w-20"
+            >
               Set TSL
             </span>
           )}
@@ -340,8 +353,9 @@ const Position = ({
               />
               <Input
                 ref={tgtInpRef}
-                defaultValue={tgt ?? ""}
-                className="w-20 h-6 text-xs"
+                defaultValue={tgt ? tgt : ""}
+                className="w-12 h-6 text-xs px-2"
+                placeholder="Target"
               />
               <CheckIcon
                 onClick={handleSetTgt}
@@ -349,17 +363,23 @@ const Position = ({
               />
             </div>
           ) : tgt ? (
-            <span onClick={() => setEditTgt(true)} className="cursor-pointer">
-              {tgt}
-            </span>
+            <div className="relative text-xs flex gap-2 w-20">
+              <span className="text-red-600">TGT :</span>
+              <span onClick={() => setEditTgt(true)} className="cursor-pointer">
+                {tgt}
+              </span>
+            </div>
           ) : (
-            <span onClick={() => setEditTgt(true)} className="cursor-pointer">
+            <span
+              onClick={() => setEditTgt(true)}
+              className="cursor-pointer text-xs w-20"
+            >
               Set TGT
             </span>
           )}
         </div>
       </div>
-      <div>
+      <div className="flex flex-col md:flex-row items-center justify-center gap-2">
         <div className="text-xs">
           {/* {(
             (parseInt(position.flBuyQty) - parseInt(position.flSellQty)) *
@@ -382,19 +402,29 @@ const Position = ({
           }}
           variant="outline"
           size="sm"
-          className="h-6 p-2"
+          className="h-6 p-2 bg-rose-600"
         >
           <XMarkIcon className="size-4" />
         </Button>
       </div>
     </div>
   ) : showNewOrder ? (
-    <div className="flex justify-between items-center text-xs md:text-sm border-y px-2 gap-4 mt-1 p-1">
-      <div className="w-full flex flex-row items-center gap-2">
-        <span className="w-20 lg:w-60 overflow-hidden grow">
-          {position.trdSym}
-        </span>
+    <div className="flex justify-between items-center text-xs border-y px-2 gap-4 mt-1 p-1">
+      <div className="grow flex flex-col lg:flex-row items-stretch lg:items-center gap-2">
+        <div className="flex justify-between items-center grow">
+          <span className="w-20 lg:w-40 overflow-hidden grow">
+            {position.trdSym}
+          </span>
+          <span>LTP:{position.lp}</span>
+        </div>
         <div className="flex items-center gap-2 md:gap-4">
+          <label className="inline-flex items-center cursor-pointer">
+            <input type="checkbox" className="sr-only peer" />
+            <div
+              className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-['C'] peer-checked:after:content-['M']
+          after:text-gray-800 after:text-center after:text-sm after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"
+            ></div>
+          </label>
           <Input
             ref={qtyInpRef}
             placeholder="qty"
@@ -402,10 +432,10 @@ const Position = ({
             defaultValue={position.lotSz}
             min={position.lotSz}
             step={position.lotSz}
-            className="h-6 w-16 text-xs"
+            className="h-6 w-12 text-xs px-2"
           />
           <Select value={prctyp} onValueChange={(val) => setPrctyp(val)}>
-            <SelectTrigger className="w-20 h-6 text-xs">
+            <SelectTrigger className="w-16 h-6 text-xs px-2">
               <SelectValue placeholder="Order Type" />
             </SelectTrigger>
             <SelectContent>
@@ -418,19 +448,29 @@ const Position = ({
             ref={prcInpRef}
             placeholder={position.lp}
             type="number"
-            className="h-6 w-20 text-xs"
+            className="h-6 w-14 text-xs px-2"
           />
+        </div>
+        <div className="flex justify-around gap-2">
+          <Button
+            onClick={newOrder}
+            variant="outline"
+            size="sm"
+            className="h-6 p-2 bg-rose-500"
+          >
+            Sell
+          </Button>
+          <Button
+            onClick={newOrder}
+            variant="outline"
+            size="sm"
+            className="h-6 p-2 bg-teal-500"
+          >
+            Buy
+          </Button>
         </div>
       </div>
       <div className="flex">
-        <Button
-          onClick={newOrder}
-          variant="outline"
-          size="sm"
-          className="h-6 p-2"
-        >
-          Buy
-        </Button>
         <Button
           onClick={() => setShowNewOrder(false)}
           variant="outline"
@@ -444,12 +484,20 @@ const Position = ({
   ) : (
     <div className="flex justify-between items-center text-xs md:text-sm border-y px-2 gap-4 mt-1 p-1">
       <div className="w-full flex item-center gap-2">
-        <div className="w-40 lg:w-60 overflow-hidden">{position.trdSym}</div>
+        <div className="w-28 lg:w-60 overflow-hidden">{position.trdSym}</div>
         <div className="flex w-40">
-          <span className="w-16">{position.lp ?? 0}</span>
-          <span className="w-16 text-right">
-            {parseInt(position.sellAmt) - parseInt(position.buyAmt)}
-          </span>
+          <div className="flex gap-2">
+            <span>LTP</span>
+            <span className="w-16">{position.lp ?? 0}</span>
+          </div>
+          <div className="flex gap-2">
+            <span>Profit/Loss</span>
+            <span className="text-right">
+              {(
+                parseFloat(position.sellAmt) - parseFloat(position.buyAmt)
+              ).toFixed(2)}
+            </span>
+          </div>
         </div>
       </div>
       <div>
@@ -459,7 +507,7 @@ const Position = ({
           size="sm"
           className="h-6 p-2"
         >
-          Buy
+          +
         </Button>
       </div>
     </div>
