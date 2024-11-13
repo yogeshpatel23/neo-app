@@ -88,7 +88,15 @@ const Terminal = ({ account }: { account: IAccount }) => {
       return [];
     }
 
-    dispatch(initPositions(res.data));
+    dispatch(
+      initPositions(
+        res.data.sort(
+          (a: PositionBook, b: PositionBook) =>
+            Math.abs(parseInt(b.flBuyQty) - parseInt(b.flSellQty)) -
+            Math.abs(parseInt(a.flBuyQty) - parseInt(a.flSellQty))
+        )
+      )
+    );
     return res.data;
   }
 

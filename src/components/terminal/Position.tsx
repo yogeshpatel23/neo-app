@@ -60,6 +60,7 @@ const Position = ({
   }
 
   function handleSetTsl() {
+    if (!position.lp) return;
     if (!sl) {
       toast({
         variant: "destructive",
@@ -76,7 +77,7 @@ const Position = ({
     }
 
     setTsl(parseFloat(tslInpRef.current.value));
-    tslPrice.current = parseFloat(position.lp ?? "0");
+    tslPrice.current = parseFloat(position.lp);
     setEditTsl(false);
   }
 
@@ -138,7 +139,7 @@ const Position = ({
     }
     if (parseInt(netQty) < 0) {
       if (tgt > parseFloat(position.lp)) {
-        console.log("Target Hit");
+        console.log("Target Hit of sell");
         handleClosePosition(netQty);
       }
     }
@@ -155,11 +156,8 @@ const Position = ({
       qt: Math.abs(parseInt(qty)).toString(),
       pc: position.prod,
       tt: parseInt(netQty) < 0 ? "B" : "S",
-      pt: "L",
-      pr: (
-        parseFloat(position.lp!) -
-        Math.round((parseFloat(position.lp!) * 0.01) / 0.05) * 0.05
-      ).toString(),
+      pt: "MKT",
+      pr: position.lp ?? "0",
     };
 
     const validData = OrderShema.safeParse(data);
@@ -168,9 +166,7 @@ const Position = ({
       return;
     }
 
-    console.log(validData.data);
-
-    /* const res = await neo.placeOreder({ ...validData.data });
+    const res = await neo.placeOreder({ ...validData.data });
     if (res.stat === "Ok") {
       toast({
         title: "Position Closed",
@@ -183,7 +179,7 @@ const Position = ({
         title: "Error",
         description: res.errMsg,
       });
-    } */
+    }
   }
 
   async function newOrder() {
@@ -289,7 +285,7 @@ const Position = ({
               <Input
                 ref={slInpRef}
                 defaultValue={sl ? sl : ""}
-                className="w-12 h-6 text-x px-2"
+                className="w-16 h-6 text-xs px-2"
               />
               <CheckIcon
                 onClick={handleSetSl}
@@ -297,16 +293,16 @@ const Position = ({
               />
             </div>
           ) : sl ? (
-            <div className="relative w-20 text-xs flex gap-2">
+            <div className="relative w-24 text-xs flex gap-2">
               <span className="text-red-600">SL :</span>
               <span onClick={() => setEditSl(true)} className="cursor-pointer">
-                {sl}
+                {sl.toFixed(2)}
               </span>
             </div>
           ) : (
             <span
               onClick={() => setEditSl(true)}
-              className="cursor-pointer text-xs w-20"
+              className="cursor-pointer text-xs w-24"
             >
               Set SL
             </span>
@@ -354,7 +350,7 @@ const Position = ({
               <Input
                 ref={tgtInpRef}
                 defaultValue={tgt ? tgt : ""}
-                className="w-12 h-6 text-xs px-2"
+                className="w-16 h-6 text-xs px-2"
                 placeholder="Target"
               />
               <CheckIcon
@@ -363,7 +359,7 @@ const Position = ({
               />
             </div>
           ) : tgt ? (
-            <div className="relative text-xs flex gap-2 w-20">
+            <div className="relative text-xs flex gap-2 w-24">
               <span className="text-red-600">TGT :</span>
               <span onClick={() => setEditTgt(true)} className="cursor-pointer">
                 {tgt}
@@ -372,7 +368,7 @@ const Position = ({
           ) : (
             <span
               onClick={() => setEditTgt(true)}
-              className="cursor-pointer text-xs w-20"
+              className="cursor-pointer text-xs w-24"
             >
               Set TGT
             </span>
